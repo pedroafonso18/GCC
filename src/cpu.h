@@ -11,6 +11,6 @@ typedef struct {
 
 uint16_t get_bc(CPU* cpu);
 
-uint16_t set_bc(CPU* cpu, uint16_t value);
+void set_bc(CPU* cpu, uint16_t value);
 
 #endif
