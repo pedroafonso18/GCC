@@ -16,18 +16,14 @@ typedef struct
     uint16_t pc;
 } CPU;
 
-uint16_t get_bc(CPU *cpu);
-
-uint16_t get_af(CPU *cpu);
-
-uint16_t get_de(CPU *cpu);
 
 
-void set_af(CPU *cpu, uint16_t value);
+uint16_t get_16bit(uint8_t cpu1, uint8_t cpu2);
 
-void set_de(CPU *cpu, uint16_t value);
 
-void set_bc(CPU *cpu, uint16_t value);
+
+void set_16bit(uint16_t value, uint8_t* cpu1, uint8_t* cpu2);
+
 
 void set_flag(CPU *cpu, uint8_t flag);
 
