@@ -27,8 +27,116 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
     switch(opcode) {
         case 0x00: //NOP
             break;
-        
-        // 8-bit load instructions
+        case 0x01: //LD BC, d16
+            cpu->c = memory[cpu->pc++];
+            cpu->b = memory[cpu->pc++];
+            break;
+        case 0x02: //LD [BC], A
+            memory[get_16bit(cpu->b, cpu->c)] = cpu->a;
+            break;
+        case 0x03: //INC BC
+            uint16_t bc = get_16bit(cpu->b, cpu->c);
+            bc +=1;
+            set_16bit(bc, &cpu->b, &cpu->c);
+            break;
+        case 0x04: //INC B
+            cpu->b++;
+            break;
+        case 0x05: //DEC B
+            cpu->b--;
+            break;
+        case 0x06: //LD B, d8
+            cpu->b = memory[cpu->pc++];
+            break;
+        case 0x07: //RLCA
+            uint8_t carry = (cpu->a & 0x80) >> 7;
+            cpu->a = (cpu->a << 1) | carry;
+            cpu->flag &= ~(FLAG_N | FLAG_H);
+            cpu->flag = (cpu->flag & ~FLAG_C) | (carry ? FLAG_C : 0);
+            break;
+        case 0x08: //LD [a16], SP
+            uint16_t address = memory[cpu->pc] | (memory[cpu->pc + 1] << 8);
+            memory[address] = cpu->sp & 0xFF;
+            memory[address + 1] = (cpu->sp >> 8) & 0xFF;
+            cpu->pc += 2;
+            break;
+        case 0x09: //ADD HL, BC
+            uint16_t hl = get_16bit(cpu->h, cpu->l);
+            uint16_t bc = get_16bit(cpu->b, cpu->c);
+            uint32_t result = hl + bc;
+
+            if (((hl & 0x0FFF) + (bc & 0x0FFF)) > 0x0FFF)
+                set_flag(&cpu, FLAG_H);
+            else {
+                clear_flag(&cpu, FLAG_H);
+            }
+
+            if (result > 0xFFFF) {
+                set_flag(&cpu, FLAG_C);
+            }
+            else {
+                clear_flag(&cpu, FLAG_C);
+            }
+
+            clear_flag(&cpu, FLAG_N);
+
+            set_16bit((uint16_t)result, &cpu->h, &cpu->l);
+            break;
+        case 0x0A: //LD A, [BC]
+            cpu->a = memory[get_16bit(cpu->b, cpu->c)];
+            break;
+        case 0x0E: //LD C, d8
+            cpu->c = memory[cpu->pc++];
+            break;
+        case 0x11: //LD DE, d16
+            cpu->e = memory[cpu->pc++];
+            cpu->d = memory[cpu->pc++];
+            break;
+        case 0x12: //LD [DE], A
+            memory[get_16bit(cpu->d, cpu->e)] = cpu->a;
+            break;
+        case 0x16: //LD D, d8
+            cpu->d = memory[cpu->pc++];
+            break;
+        case 0x1A: //LD A, [DE]
+            cpu->a = memory[get_16bit(cpu->d, cpu->e)];
+            break;
+        case 0x1E: //LD E, d8
+            cpu->e = memory[cpu->pc++];
+            break;
+        case 0x21: //LD HL, d16
+            cpu->l = memory[cpu->pc++];
+            cpu->h = memory[cpu->pc++];
+            break;
+        case 0x22: //LD [HL+], A
+            memory[get_16bit(cpu->h, cpu->l)] = cpu->a;
+            set_16bit(get_16bit(cpu->h, cpu->l) + 1, &cpu->h, &cpu->l);
+            break;
+        case 0x26: //LD H, d8
+            cpu->h = memory[cpu->pc++];
+            break;
+        case 0x2A: //LD A, [HL+]
+            cpu->a = memory[get_16bit(cpu->h, cpu->l)];
+            set_16bit(get_16bit(cpu->h, cpu->l) + 1, &cpu->h, &cpu->l);
+            break;
+        case 0x2E: //LD L, d8
+            cpu->l = memory[cpu->pc++];
+            break;
+        case 0x31: //LD SP, d16
+            cpu->sp = memory[cpu->pc] | (memory[cpu->pc + 1] << 8);
+            cpu->pc += 2;
+            break;
+        case 0x32: //LD [HL-], A
+            memory[get_16bit(cpu->h, cpu->l)] = cpu->a;
+            set_16bit(get_16bit(cpu->h, cpu->l) - 1, &cpu->h, &cpu->l);
+            break;
+        case 0x3A: //LD A, [HL-]
+            cpu->a = memory[get_16bit(cpu->h, cpu->l)];
+            set_16bit(get_16bit(cpu->h, cpu->l) - 1, &cpu->h, &cpu->l);
+            break;
+        case 0x3E: //LD A, d8
+            cpu->a = memory[cpu->pc++];
+            break;
         case 0x40: //LD B, B
             break;
         case 0x41: //LD B, C
@@ -52,7 +160,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x47: //LD B, A
             cpu->b = cpu->a;
             break;
-        
         case 0x48: //LD C, B
             cpu->c = cpu->b;
             break;
@@ -76,7 +183,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x4F: //LD C, A
             cpu->c = cpu->a;
             break;
-            
         case 0x50: //LD D, B
             cpu->d = cpu->b;
             break;
@@ -100,7 +206,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x57: //LD D, A
             cpu->d = cpu->a;
             break;
-            
         case 0x58: //LD E, B
             cpu->e = cpu->b;
             break;
@@ -124,7 +229,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x5F: //LD E, A
             cpu->e = cpu->a;
             break;
-            
         case 0x60: //LD H, B
             cpu->h = cpu->b;
             break;
@@ -148,7 +252,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x67: //LD H, A
             cpu->h = cpu->a;
             break;
-            
         case 0x68: //LD L, B
             cpu->l = cpu->b;
             break;
@@ -172,7 +275,6 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x6F: //LD L, A
             cpu->l = cpu->a;
             break;
-            
         case 0x70: //LD [HL], B
             memory[get_16bit(cpu->h, cpu->l)] = cpu->b;
             break;
@@ -191,10 +293,11 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x75: //LD [HL], L
             memory[get_16bit(cpu->h, cpu->l)] = cpu->l;
             break;
+        case 0x76: //HALT
+            break;
         case 0x77: //LD [HL], A
             memory[get_16bit(cpu->h, cpu->l)] = cpu->a;
             break;
-            
         case 0x78: //LD A, B
             cpu->a = cpu->b;
             break;
@@ -218,111 +321,28 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
             break;
         case 0x7F: //LD A, A
             break;
-            
-        // Immediate load instructions
-        case 0x06: //LD B, d8
-            cpu->b = memory[cpu->pc++];
-            break;
-        case 0x0E: //LD C, d8
-            cpu->c = memory[cpu->pc++];
-            break;
-        case 0x16: //LD D, d8
-            cpu->d = memory[cpu->pc++];
-            break;
-        case 0x1E: //LD E, d8
-            cpu->e = memory[cpu->pc++];
-            break;
-        case 0x26: //LD H, d8
-            cpu->h = memory[cpu->pc++];
-            break;
-        case 0x2E: //LD L, d8
-            cpu->l = memory[cpu->pc++];
-            break;
-        case 0x3E: //LD A, d8
-            cpu->a = memory[cpu->pc++];
-            break;
-            
-        // Load from/to specific memory addresses
-        case 0x02: //LD [BC], A
-            memory[get_16bit(cpu->b, cpu->c)] = cpu->a;
-            break;
-        case 0x12: //LD [DE], A
-            memory[get_16bit(cpu->d, cpu->e)] = cpu->a;
-            break;
-        case 0x0A: //LD A, [BC]
-            cpu->a = memory[get_16bit(cpu->b, cpu->c)];
-            break;
-        case 0x1A: //LD A, [DE]
-            cpu->a = memory[get_16bit(cpu->d, cpu->e)];
-            break;
-            
-        // Load with increment/decrement
-        case 0x22: //LD [HL+], A
-            memory[get_16bit(cpu->h, cpu->l)] = cpu->a;
-            set_16bit(get_16bit(cpu->h, cpu->l) + 1, &cpu->h, &cpu->l);
-            break;
-        case 0x2A: //LD A, [HL+]
-            cpu->a = memory[get_16bit(cpu->h, cpu->l)];
-            set_16bit(get_16bit(cpu->h, cpu->l) + 1, &cpu->h, &cpu->l);
-            break;
-        case 0x32: //LD [HL-], A
-            memory[get_16bit(cpu->h, cpu->l)] = cpu->a;
-            set_16bit(get_16bit(cpu->h, cpu->l) - 1, &cpu->h, &cpu->l);
-            break;
-        case 0x3A: //LD A, [HL-]
-            cpu->a = memory[get_16bit(cpu->h, cpu->l)];
-            set_16bit(get_16bit(cpu->h, cpu->l) - 1, &cpu->h, &cpu->l);
-            break;
-            
-        // 16-bit load instructions
-        case 0x01: //LD BC, d16
-            cpu->c = memory[cpu->pc++];
-            cpu->b = memory[cpu->pc++];
-            break;
-        case 0x11: //LD DE, d16
-            cpu->e = memory[cpu->pc++];
-            cpu->d = memory[cpu->pc++];
-            break;
-        case 0x21: //LD HL, d16
-            cpu->l = memory[cpu->pc++];
-            cpu->h = memory[cpu->pc++];
-            break;
-        case 0x31: //LD SP, d16
-            cpu->sp = memory[cpu->pc] | (memory[cpu->pc + 1] << 8);
-            cpu->pc += 2;
-            break;
-            
-        // Special load instructions
         case 0xE0: //LDH [a8], A
             memory[0xFF00 + memory[cpu->pc++]] = cpu->a;
             break;
-        case 0xF0: //LDH A, [a8]
-            cpu->a = memory[0xFF00 + memory[cpu->pc++]];
-            break;
         case 0xE2: //LD [C], A
             memory[0xFF00 + cpu->c] = cpu->a;
-            break;
-        case 0xF2: //LD A, [C]
-            cpu->a = memory[0xFF00 + cpu->c];
             break;
         case 0xEA: //LD [a16], A
             memory[memory[cpu->pc] | (memory[cpu->pc + 1] << 8)] = cpu->a;
             cpu->pc += 2;
             break;
-        case 0xFA: //LD A, [a16]
-            cpu->a = memory[memory[cpu->pc] | (memory[cpu->pc + 1] << 8)];
-            cpu->pc += 2;
+        case 0xF0: //LDH A, [a8]
+            cpu->a = memory[0xFF00 + memory[cpu->pc++]];
             break;
-        case 0x08: //LD [a16], SP
-            {
-                uint16_t address = memory[cpu->pc] | (memory[cpu->pc + 1] << 8);
-                memory[address] = cpu->sp & 0xFF;
-                memory[address + 1] = (cpu->sp >> 8) & 0xFF;
-                cpu->pc += 2;
-            }
+        case 0xF2: //LD A, [C]
+            cpu->a = memory[0xFF00 + cpu->c];
             break;
         case 0xF9: //LD SP, HL
             cpu->sp = get_16bit(cpu->h, cpu->l);
+            break;
+        case 0xFA: //LD A, [a16]
+            cpu->a = memory[memory[cpu->pc] | (memory[cpu->pc + 1] << 8)];
+            cpu->pc += 2;
             break;
     }
 }
