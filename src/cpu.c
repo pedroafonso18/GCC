@@ -66,27 +66,73 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
             uint32_t result = hl + bc;
 
             if (((hl & 0x0FFF) + (bc & 0x0FFF)) > 0x0FFF)
-                set_flag(&cpu, FLAG_H);
+                set_flag(cpu, FLAG_H);
             else {
-                clear_flag(&cpu, FLAG_H);
+                clear_flag(cpu, FLAG_H);
             }
 
             if (result > 0xFFFF) {
-                set_flag(&cpu, FLAG_C);
+                set_flag(cpu, FLAG_C);
             }
             else {
-                clear_flag(&cpu, FLAG_C);
+                clear_flag(cpu, FLAG_C);
             }
 
-            clear_flag(&cpu, FLAG_N);
+            clear_flag(cpu, FLAG_N);
 
             set_16bit((uint16_t)result, &cpu->h, &cpu->l);
             break;
         case 0x0A: //LD A, [BC]
             cpu->a = memory[get_16bit(cpu->b, cpu->c)];
             break;
+        case 0x0B: //DEC BC
+            uint16_t bc = get_16bit(cpu->b, cpu->c);
+            bc--;
+            set_16bit(bc, &cpu->b, &cpu->c);
+            set_flag(cpu, FLAG_N);
+            break;
+            case 0x0C: // INC C
+            {
+                if ((cpu->c & 0x0F) + 1 > 0x0F)
+                    set_flag(cpu, FLAG_H);
+                else
+                    clear_flag(cpu, FLAG_H);
+            
+                cpu->c++;
+            
+                if (cpu->c == 0)
+                    set_flag(cpu, FLAG_Z);
+                else
+                    clear_flag(cpu, FLAG_Z);
+            
+                clear_flag(cpu, FLAG_N);
+                break;
+            }            
+        case 0x0D: //DEC C
+            uint8_t result = cpu->c - 1;
+            if (result == 0) {
+                set_flag(cpu, FLAG_Z);
+            } else {
+                clear_flag(cpu, FLAG_Z);
+            }
+            set_flag(cpu, FLAG_N);
+
+            if ((cpu->c & 0x0F) == 0){
+                set_flag(cpu, FLAG_H);
+            }
+            else {
+                clear_flag(cpu, FLAG_H);
+            }
+            cpu->c = result;
+            break;
         case 0x0E: //LD C, d8
             cpu->c = memory[cpu->pc++];
+            break;
+        case 0x0F: //RRCA
+            uint8_t carry = cpu->a & 0x80;
+            cpu->a = (cpu->a >> 1) | (carry << 7);
+            cpu->flag &= ~(FLAG_N | FLAG_H);
+            cpu->flag = (cpu->flag & ~FLAG_C) | (carry ? FLAG_C : 0);
             break;
         case 0x11: //LD DE, d16
             cpu->e = memory[cpu->pc++];
