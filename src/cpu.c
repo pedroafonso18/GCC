@@ -141,9 +141,26 @@ void execute_instructions(CPU* cpu, uint8_t* memory) {
         case 0x12: //LD [DE], A
             memory[get_16bit(cpu->d, cpu->e)] = cpu->a;
             break;
+        case 0x13: //INC DE
+            uint16_t de = get_16bit(cpu->d, cpu->e);
+            de +=1;
+            set_16bit(de, &cpu->d, &cpu->e);
+            break;
+        case 0x14: //INC D
+            cpu->d++;
+            break;
+        case 0x15: //DEC D
+            cpu->d--;
+            break;
         case 0x16: //LD D, d8
             cpu->d = memory[cpu->pc++];
             break;
+        case 0x17: //RLA
+            uint8_t carry = (cpu->flag & FLAG_C) ? 1 : 0;
+            uint8_t new_carry = (cpu->a & 0x80) >> 7;
+            cpu->a = (cpu->a << 1) | carry;
+            cpu->flag &= ~(FLAG_N | FLAG_H);
+            cpu->flag = (cpu->flag & ~FLAG_C) | (new_carry ? FLAG_C : 0);
         case 0x1A: //LD A, [DE]
             cpu->a = memory[get_16bit(cpu->d, cpu->e)];
             break;
